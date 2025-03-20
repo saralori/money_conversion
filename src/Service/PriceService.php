@@ -43,6 +43,66 @@ class PriceService
         return $sum;
     }
 
+    public function subPrices(array $firstPrice, array $secondPrice): string {
+        $sub = [];
+        //Converto i prezzi in pence, così da facilitare i conti
+        $firstPriceConverted = $this->convertPriceToPence($firstPrice);
+        $secondPriceConverted = $this->convertPriceToPence($secondPrice);
+
+        //Sottraggo i prezzi in pence
+        $subConverted = $firstPriceConverted - $secondPriceConverted;
+
+        // Se la sottrazione dà risultato negativo restituisco stringa vuota
+        // per gestire l'errore
+        if($subConverted<0) {
+            return '';
+        }
+
+        //Converto il prezzo in singole unità
+        $subArray = $this->convertPriceToSingleUnits($subConverted);
+
+        //Trasformo la somma in strings con le unità di misura
+        $sub = $this->convertWithStringWithMeasureUnits($subArray);
+        return $sub;
+    }
+
+    public function multiplicatePrices(array $price, int $multiplicator): string {
+        $mul = [];
+        //Converto i prezzi in pence, così da facilitare i conti
+        $priceConverted = $this->convertPriceToPence($price);
+
+        //Sommo i prezzi in pence
+        $mulConverted = $priceConverted * $multiplicator;
+
+        //Converto il prezzo in singole unità
+        $mulArray = $this->convertPriceToSingleUnits($mulConverted);
+
+        //Trasformo la somma in strings con le unità di misura
+        $mul = $this->convertWithStringWithMeasureUnits($mulArray);
+        return $mul;
+    }
+
+    public function dividePrices(array $price, int $factor): string {
+        $divisionArray = [];
+        //Converto i prezzi in pence, così da facilitare i conti
+        $priceConverted = $this->convertPriceToPence($price);
+
+        //Divido i prezzi in pence, considerando solo la divisione intera
+        $divisionConverted = intdiv($priceConverted, $factor);
+        //Calcolo il resto
+        $moduleConverted = $priceConverted % $factor;
+
+        //Converto il prezzo in singole unità
+        $divisionArray = $this->convertPriceToSingleUnits($divisionConverted);
+        $moduleArray = $this->convertPriceToSingleUnits($moduleConverted);
+
+        //Trasformo la somma in strings con le unità di misura
+        $division = $this->convertWithStringWithMeasureUnits($divisionArray);
+        $module = $this->convertWithStringWithMeasureUnits($moduleArray);
+
+        return $division . " (" . $module . ")";
+    }
+
     private function formatSinglePriceVoices(string $voice, $voiceType): string {
         $value = '';
         switch ($voiceType) {
@@ -79,6 +139,7 @@ class PriceService
         $pounds = 0;
         $shillings = 0;
         $pences = 0;
+
         // Controllo se rientro nei 12 pence
         if($price <12) {
             return [$pounds, $shillings, $price];

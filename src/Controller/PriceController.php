@@ -49,10 +49,10 @@ final class PriceController extends AbstractController
         $priceService = new PriceService();
         $firstPriceValidated = $priceService->validatePrice($firstPrice);
         $secondPriceValidated = $priceService->validatePrice($secondPrice);
-        $json = new JsonResponse(['result'=> 'prova']);
-        $json->setStatusCode(200, "Ok");
+
+        $json = new JsonResponse();
+
         if (sizeof($firstPriceValidated)!=3 || sizeof($secondPriceValidated)!=3) {
-            $json = new JsonResponse();
             $json->setStatusCode(400, "Invalid request");
         }
         /******* */
@@ -66,7 +66,86 @@ final class PriceController extends AbstractController
         // $resultPrice->setPence($firstPricePence);
         // $resultPrice->setShilling($firstPriceShilling);
         // $resultPrice->setPound($firstPricePounds);
-        $json = new JsonResponse(['result'=> $sum]);
+        $json->setData(['result'=> $sum]);
+        $json->setStatusCode(200, "Ok");
+        return $json;
+    }
+
+    #[Route('/api/price/sub', name: 'price_sub', methods: ['POST'])]
+    public function sub(Request $request): Response {
+        $firstPrice = $request->getPayload()->get('first_price', null);
+        $secondPrice = $request->getPayload()->get('second_price', null);
+
+        /** Validazione campi in ingresso  */
+        $priceService = new PriceService();
+        $firstPriceValidated = $priceService->validatePrice($firstPrice);
+        $secondPriceValidated = $priceService->validatePrice($secondPrice);
+
+        $json = new JsonResponse();
+        if (sizeof($firstPriceValidated)!=3 || sizeof($secondPriceValidated)!=3) {
+            $json->setStatusCode(400, "Invalid request");
+        }
+        /******* */
+
+        $sub = $priceService->subPrices($firstPriceValidated, $secondPriceValidated);
+
+        // Controllo il caso in cui il risultato in cui è minore di 0,
+        // in quel caso la richiesta non è valida
+        if($sub == '') {
+            $json->setStatusCode(400, "Invalid request");
+        } 
+
+        // $firstPriceArray = json_decode($firstPrice, associative: true);
+       
+        // $resultPrice = new Price();
+        // $resultPrice->setPence($firstPricePence);
+        // $resultPrice->setShilling($firstPriceShilling);
+        // $resultPrice->setPound($firstPricePounds);
+        $json->setData(['result'=> $sub]);
+        $json->setStatusCode(200, "Ok");
+        return $json;
+    }
+
+    #[Route('/api/price/mul', name: 'price_mul', methods: ['POST'])]
+    public function multiplicate(Request $request): Response {
+        $firstPrice = $request->getPayload()->get('first_price', null);
+        $multiplicator = $request->getPayload()->get('multiplicator', null);
+
+        /** Validazione campi in ingresso  */
+        $priceService = new PriceService();
+        $firstPriceValidated = $priceService->validatePrice($firstPrice);
+
+        $json = new JsonResponse();
+        if(gettype($multiplicator)!='integer' || $multiplicator<0 || sizeof($firstPriceValidated)!=3 ) {
+            $json->setStatusCode(400, "Invalid request");
+        }
+        /******* */
+
+        $mul = $priceService->multiplicatePrices($firstPriceValidated, $multiplicator);
+
+        $json->setData(['result'=> $mul]);
+        $json->setStatusCode(200, "Ok");
+        return $json;
+    }
+
+    #[Route('/api/price/mul', name: 'price_mul', methods: ['POST'])]
+    public function divide(Request $request): Response {
+        $firstPrice = $request->getPayload()->get('first_price', null);
+        $factor = $request->getPayload()->get('factor', null);
+
+        /** Validazione campi in ingresso  */
+        $priceService = new PriceService();
+        $firstPriceValidated = $priceService->validatePrice($firstPrice);
+
+        $json = new JsonResponse();
+        if(gettype($factor)!='integer' || $factor<0 || sizeof($firstPriceValidated)!=3 ) {
+            $json->setStatusCode(400, "Invalid request");
+        }
+        /******* */
+
+        $division = $priceService->dividePrices($firstPriceValidated, $factor);
+
+        $json->setData(['result'=> $division]);
         $json->setStatusCode(200, "Ok");
         return $json;
     }
