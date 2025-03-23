@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\PriceRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Mapping\ClassMetadata;
 
 #[ORM\Entity(repositoryClass: PriceRepository::class)]
 class Price
@@ -14,52 +16,30 @@ class Price
     private ?int $id = null;
 
     #[ORM\Column]
-    private ?int $pence = null;
+    private ?string $value = null;
 
     #[ORM\Column]
-    private ?int $shilling = null;
-
-    #[ORM\Column]
-    private ?int $pound = null;
+    private ?int $coeff = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getPence(): ?int
+    public function getValue(): ?string
     {
-        return $this->pence;
+        return $this->value;
     }
 
-    public function setPence(int $pence): static
+    public function setValue(string $value): static
     {
-        $this->pence = $pence;
+        $this->value = $value;
 
         return $this;
     }
 
-    public function getShilling(): ?int
+    public static function loadValidatorMetadata(ClassMetadata $metadata): void
     {
-        return $this->shilling;
-    }
-
-    public function setShilling(int $shilling): static
-    {
-        $this->shilling = $shilling;
-
-        return $this;
-    }
-
-    public function getPound(): ?int
-    {
-        return $this->pound;
-    }
-
-    public function setPound(int $pound): static
-    {
-        $this->pound = $pound;
-
-        return $this;
+        $metadata->addPropertyConstraint('name', new NotBlank());
     }
 }

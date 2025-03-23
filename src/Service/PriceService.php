@@ -10,23 +10,33 @@ class PriceService
     {
         $parameters = explode(" ", $price);
 
-        if(sizeof($parameters)!=3) {
-            return [];
+        if (sizeof($parameters) != 3) {
+            return ["Error on parameters format"];
         }
-        
+
         $pounds = $this->formatSinglePriceVoices($parameters[0], 'pound');
         $shillings = $this->formatSinglePriceVoices($parameters[1], 'shilling');
         $pences = $this->formatSinglePriceVoices($parameters[2], 'pence');
 
-        if($pounds == '' || $shillings == '' || $pences == '') {
-            return [];
+        if ($pounds == '' || $shillings == '' || $pences == '') {
+            return ['Error on parameters format'];
         }
         //TODO: gestire validazione campi interi
 
         return [$pounds, $shillings, $pences];
     }
 
-    public function sumPrices(array $firstPrice, array $secondPrice): string {
+    public function validateCoefficient($coeff): bool
+    {
+        $error = false;
+        if (gettype($coeff) != 'integer' || $coeff < 0) {
+            $error = true;
+        }
+        return $error;
+    }
+
+    public function sumPrices(array $firstPrice, array $secondPrice): string
+    {
         $sum = [];
         //Converto i prezzi in pence, così da facilitare i conti
         $firstPriceConverted = $this->convertPriceToPence($firstPrice);
@@ -43,7 +53,8 @@ class PriceService
         return $sum;
     }
 
-    public function subPrices(array $firstPrice, array $secondPrice): string {
+    public function subPrices(array $firstPrice, array $secondPrice): string
+    {
         $sub = [];
         //Converto i prezzi in pence, così da facilitare i conti
         $firstPriceConverted = $this->convertPriceToPence($firstPrice);
@@ -54,7 +65,7 @@ class PriceService
 
         // Se la sottrazione dà risultato negativo restituisco stringa vuota
         // per gestire l'errore
-        if($subConverted<0) {
+        if ($subConverted < 0) {
             return '';
         }
 
@@ -66,7 +77,8 @@ class PriceService
         return $sub;
     }
 
-    public function multiplicatePrices(array $price, int $multiplicator): string {
+    public function multiplicatePrices(array $price, int $multiplicator): string
+    {
         $mul = [];
         //Converto i prezzi in pence, così da facilitare i conti
         $priceConverted = $this->convertPriceToPence($price);
@@ -82,7 +94,8 @@ class PriceService
         return $mul;
     }
 
-    public function dividePrices(array $price, int $factor): string {
+    public function dividePrices(array $price, int $factor): string
+    {
         $divisionArray = [];
         //Converto i prezzi in pence, così da facilitare i conti
         $priceConverted = $this->convertPriceToPence($price);
@@ -103,7 +116,8 @@ class PriceService
         return $division . " (" . $module . ")";
     }
 
-    private function formatSinglePriceVoices(string $voice, $voiceType): string {
+    private function formatSinglePriceVoices(string $voice, $voiceType): string
+    {
         $value = '';
         switch ($voiceType) {
             case 'pound':
@@ -119,13 +133,20 @@ class PriceService
                 //In caso di errore setto $value come array vuoto, così da gestirlo come dato anomalo
                 $value = [];
         }
-        if(sizeof($value)!=2) {
+        if (
+            sizeof($value) != 2 ||
+            strlen($value[1]) != 1 ||
+            gettype($value[1]) != 'integer' ||
+            $value[1] < 0
+        ) {
             return '';
         }
+
         return $value[0];
     }
 
-    private function convertPriceToPence(array $price): int {
+    private function convertPriceToPence(array $price): int
+    {
         //Converto i pounds in shilling
         $shillings = 20 * $price[0] + $price[1];
         //Converto gli shilling in pence
@@ -134,37 +155,37 @@ class PriceService
         return $pences;
     }
 
-    private function convertPriceToSingleUnits(int $price): array {
+    private function convertPriceToSingleUnits(int $price): array
+    {
         //Inizializzo le variabili
         $pounds = 0;
         $shillings = 0;
         $pences = 0;
 
         // Controllo se rientro nei 12 pence
-        if($price <12) {
+        if ($price < 12) {
             return [$pounds, $shillings, $price];
         }
         $shillings = intdiv($price, 12);
         $pences = $price % 12;
 
         // Controllo se rientro nei 20 shilling
-        if($shillings < 20) {
+        if ($shillings < 20) {
             return [$pounds, $shillings, $pences];
         }
 
-        $pounds = intdiv($shillings,20);
+        $pounds = intdiv($shillings, 20);
         $shillings = $shillings % 20;
         return [$pounds, $shillings, $pences];
     }
 
-    private function convertWithStringWithMeasureUnits(array $values): string {
+    private function convertWithStringWithMeasureUnits(array $values): string
+    {
         $price = '';
         $measureUnits = ["p", "s", "d"];
-        for($i=0; $i<3; $i++) {
+        for ($i = 0; $i < 3; $i++) {
             $price .= $values[$i] . $measureUnits[$i] . " ";
         }
         return trim($price);
     }
 }
-
-?>
