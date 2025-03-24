@@ -104,16 +104,22 @@ class PriceService
         $divisionConverted = intdiv($priceConverted, $factor);
         //Calcolo il resto
         $moduleConverted = $priceConverted % $factor;
+        
 
         //Converto il prezzo in singole unità
         $divisionArray = $this->convertPriceToSingleUnits($divisionConverted);
-        $moduleArray = $this->convertPriceToSingleUnits($moduleConverted);
 
         //Trasformo la somma in strings con le unità di misura
         $division = $this->convertWithStringWithMeasureUnits($divisionArray);
-        $module = $this->convertWithStringWithMeasureUnits($moduleArray);
 
-        return $division . " (" . $module . ")";
+        $module = '';
+        //Se il resto è >0 lo converto invaluta
+        if($moduleConverted>0) {
+            $moduleArray = $this->convertPriceToSingleUnits($moduleConverted);
+            $module = " (" . $this->convertWithStringWithMeasureUnits($moduleArray) . ")";
+        }
+
+        return $division . $module;
     }
 
     private function formatSinglePriceVoices(string $voice, $voiceType): string
@@ -135,9 +141,7 @@ class PriceService
         }
         if (
             sizeof($value) != 2 ||
-            strlen($value[1]) != 1 ||
-            gettype($value[1]) != 'integer' ||
-            $value[1] < 0
+            (int)$value[0] < 0
         ) {
             return '';
         }

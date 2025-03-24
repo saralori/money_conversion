@@ -344,7 +344,6 @@ final class PriceController extends AbstractController
         /** Validazione campi in ingresso  */
         $priceService = new PriceService();
         $firstPriceValidated = $priceService->validatePrice($firstPrice);
-
         $json = new JsonResponse();
         if (gettype($factor) != 'integer' || $factor <= 0 || sizeof($firstPriceValidated) != 3) {
             $json->setStatusCode(400, "Invalid request");
