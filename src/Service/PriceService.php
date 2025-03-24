@@ -2,8 +2,6 @@
 
 namespace App\Service;
 
-use phpDocumentor\Reflection\Types\Integer;
-
 class PriceService
 {
     public function validatePrice(string $price): array
