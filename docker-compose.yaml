@@ -8,34 +8,49 @@ services:
         volumes:
             - db-data:/var/lib/mysql
         environment:
-            MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+            - MYSQL_PASSWORD=money_conversion_password
+            - MYSQL_DATABASE=money_conversion
+            - MYSQL_USER=money_conversion_user
+            - MYSQL_ROOT_PASSWORD=password
+            - MYSQL_ALLOW_EMPTY_PASSWORD=no
+            - MYSQL_RANDOM_ROOT_PASSWORD=no
+        ports:
+            - "3306"
+        networks:
+            - conversion        
+        healthcheck:
+            test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+            timeout: 20s
+            retries: 10
+
+    #phpmyadmin container
+    phpmyadmin:
+        image: phpmyadmin
+        container_name: phpmyadmin_money_conversion
+        restart: always
+        depends_on:
+            - db
+        ports:
+            - 8080:80
+        environment:
+            PMA_HOST: db
         networks:
             - conversion
-
-    # phpmyadmin container
-    # phpmyadmin:
-    #     image: phpmyadmin
-    #     container_name: money_conversion
-    #     restart: always
-    #     depends_on:
-    #         - db
-    #     ports:
-    #         - 8080:80
-    #     environment:
-    #         PMA_HOST: db
-    #     networks:
-    #         - conversion
 
     # Symfony apache project container
     www:
         build: .
         container_name: money_conversion
         ports:
-          - "8080:80"
+          - "8000:80"
         volumes:
             - ./docker/vhosts:/etc/apache2/sites-enabled
             - ./:/var/www
         restart: always
+        depends_on:
+            db:
+                condition: service_healthy
+                restart: true
         networks:
             - conversion
 

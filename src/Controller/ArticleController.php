@@ -188,6 +188,7 @@ final class ArticleController extends AbstractController
                     description: 'The result in case of creation successfully made.',
                     summary: 'The result in case of creation successfully made.',
                     value: '{
+                            "result": "Article created",
                             "id": "150",
                         }'
                 )
@@ -269,6 +270,7 @@ final class ArticleController extends AbstractController
             $json = new JsonResponse();
             $json->setData(['error' => "Error on article creation"]);
             $json->setStatusCode(500, "KO");
+            return $json;
         }
     }
 }

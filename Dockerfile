@@ -25,7 +25,12 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-scripts --no-autoloader
 
 EXPOSE 80
 
+COPY /docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 RUN sed -i 's!/var/www/html!/var/www/html/public!g' \
 /etc/apache2/sites-available/000-default.conf
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
 CMD ["apache2-foreground"]

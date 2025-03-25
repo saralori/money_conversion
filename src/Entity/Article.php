@@ -9,6 +9,7 @@ use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ArticleRepository::class)]
+#[ORM\UniqueConstraint(name: "code_idx", columns: ["code_id"])]
 class Article
 {
     #[ORM\Id]
