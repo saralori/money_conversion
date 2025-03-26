@@ -20,7 +20,7 @@ class CreateArticleDto
 
         #[NotBlank(message: 'The name must be populated')]
         #[PositiveOrZero(message: 'The price must be positive')]
-        #[Type('float')]
+        #[Type('float', message: 'This field myst be of type float')]
         public readonly float $price,
     ) {
     }

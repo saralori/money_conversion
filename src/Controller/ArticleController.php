@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use ApiPlatform\Validator\ValidatorInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use OpenApi\Attributes as OA;
@@ -197,7 +197,7 @@ final class ArticleController extends AbstractController
     )]
     #[
         OA\Response(
-            response: 400,
+            response: 422,
             description: 'KO',
             content: new OA\JsonContent(
                 examples: [
@@ -252,13 +252,34 @@ final class ArticleController extends AbstractController
         schema: new OA\Schema(type: 'float', description: 'This field represent the price of the article', example: '15,4')
 
     )]
-    public function create(#[MapRequestPayload] CreateArticleDto $createPost, EntityManagerInterface $entityManager)
+    public function create(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator)
     {
         try {
+            $createPost = new CreateArticleDto(
+                $request->get('code_id'), 
+                $request->get('name'), $request->get('price'));
+            $errors = $validator->validate($createPost);
+
+            if (count($errors) > 0) {
+                /*
+                 * Uses a __toString method on the $errors variable which is a
+                 * ConstraintViolationList object. This gives us a nice string
+                 * for debugging.
+                 */
+                $errorsString = (string) $errors;
+            
+                return $this->json([
+                            'status'  => 'error',
+                            'message' => $errorsString
+                        ], 422);
+            }
+
             $article = new Article();
             $article->setCodeId($createPost->code_id);
             $article->setName($createPost->name);
             $article->setPrice($createPost->price);
+
+            
             $entityManager->persist($article);
             $entityManager->flush();
 
