@@ -57,6 +57,7 @@ final class PriceController extends AbstractController
                         summary: 'The result object in case of invalid request',
                         description: 'The result object in case of invalid request',
                         value: '{
+                        "status": "Error",
                         "error": "The input has to be the format 18p 16s 1d"
                     }'
                     )
@@ -124,15 +125,13 @@ final class PriceController extends AbstractController
 
             $sum = $priceService->sumPrices($firstPriceValidated, $secondPriceValidated);
 
-            $json = new JsonResponse();
-            $json->setData(['result' => $sum]);
-            $json->setStatusCode(200, "Ok");
-            return $json;
+            return $this->json([
+                'result' => $sum
+            ], 200);
         } catch (Throwable $e) {
-            $json = new JsonResponse();
-            $json->setData(['error' => "Some error occurred during the operations"]);
-            $json->setStatusCode(500, "KO");
-            return $json;
+            return $this->json([
+                'error' => "Some error occurred during the operations"
+            ], 500);
         }
     }
 
@@ -171,6 +170,7 @@ final class PriceController extends AbstractController
                         summary: 'The result object in case of invalid request',
                         description: "The result object in case of invalid request",
                         value: '{
+                            "status": "Error",
                             "error":  "The input has to be the format 18p 16s 1d"
                         }'
                     )
@@ -239,19 +239,20 @@ final class PriceController extends AbstractController
 
             // Controllo il caso in cui il risultato in cui è minore di 0,
             // in quel caso la richiesta non è valida
-            $json = new JsonResponse();
             if ($sub == '') {
-                $json->setStatusCode(400, "Invalid request");
+                return $this->json([
+                    "status" => "error",
+                    'error' => "Invalid request"
+                ], status: 400);
             }
 
-            $json->setData(['result' => $sub]);
-            $json->setStatusCode(200, "Ok");
-            return $json;
+            return $this->json([
+                'result' => $sub
+            ], 200);
         } catch (Throwable $e) {
-            $json = new JsonResponse();
-            $json->setData(['error' => "Some error occurred during the operations"]);
-            $json->setStatusCode(500, "KO");
-            return $json;
+            return $this->json([
+                'error' => "Some error occurred during the operations"
+            ], 500);
         }
     }
 
@@ -290,7 +291,8 @@ final class PriceController extends AbstractController
                         summary: 'The result object in case of invalid request',
                         description: "The result object in case of invalid request",
                         value: '{
-                        "error":  "The input has to be the format 18p 16s 1d"
+                        "status": "error",
+                        "message":  "The input has to be the format 18p 16s 1d"
                     }'
                     )
                 ]
@@ -345,11 +347,10 @@ final class PriceController extends AbstractController
                     'message' => $errorsString
                 ], 400);
             }
-            $json = new JsonResponse();
             if (gettype($multiplicator) != 'integer' || $multiplicator < 0) {
                 return $this->json([
-                    'status'  => 'error',
-                    'message' => "Invalid request"
+                    "status" => "Error",
+                    "message" => "Invalid request, the multiplicatior must be >= 0"
                 ], 400);
             }
 
@@ -361,14 +362,13 @@ final class PriceController extends AbstractController
 
             $mul = $priceService->multiplicatePrices($firstPriceValidated, $multiplicator);
 
-            $json->setData(['result' => $mul]);
-            $json->setStatusCode(200, "Ok");
-            return $json;
+            return $this->json([
+                'result' => $mul
+            ], 200);
         } catch (Throwable $e) {
-            $json = new JsonResponse();
-            $json->setData(['error' => "Some error occurred during the operations"]);
-            $json->setStatusCode(500, "KO");
-            return $json;
+            return $this->json([
+                'error' => "Some error occurred during the operations"
+            ], 500);
         }
     }
 
@@ -407,6 +407,7 @@ final class PriceController extends AbstractController
                         summary: 'The result object in case of invalid request',
                         description: "The result object in case of invalid request",
                         value: '{
+                        "status": "Error",
                         "error":  "The input has to be the format 18p 16s 1d"
                     }'
                     )
@@ -462,29 +463,27 @@ final class PriceController extends AbstractController
                     'message' => $errorsString
                 ], 400);
             }
-
-            /** Validazione campi in ingresso  */
-            $priceService = new PriceService();
-            $firstPriceValidated = $priceService->formatPrice($firstPrice);
-            $json = new JsonResponse();
             if (gettype($factor) != 'integer' || $factor <= 0) {
                 return $this->json([
                     'status'  => 'error',
                     'message' => "Invalid request"
                 ], 400);
             }
+
+            /** Validazione campi in ingresso  */
+            $priceService = new PriceService();
+            $firstPriceValidated = $priceService->formatPrice($firstPrice);
             /******* */
 
             $division = $priceService->dividePrices($firstPriceValidated, $factor);
 
-            $json->setData(['result' => $division]);
-            $json->setStatusCode(200, "Ok");
-            return $json;
+            return $this->json([
+                'result'  => $division
+            ], 200);
         } catch (Throwable $e) {
-            $json = new JsonResponse();
-            $json->setData(['error' => "Some error occurred during the operations"]);
-            $json->setStatusCode(500, "KO");
-            return $json;
+            return $this->json([
+                'error' => "Some error occurred during the operations"
+            ], 500);
         }
     }
 }
