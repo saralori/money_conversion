@@ -197,7 +197,7 @@ final class ArticleController extends AbstractController
     )]
     #[
         OA\Response(
-            response: 422,
+            response: 400,
             description: 'KO',
             content: new OA\JsonContent(
                 examples: [
@@ -261,17 +261,12 @@ final class ArticleController extends AbstractController
             $errors = $validator->validate($createPost);
 
             if (count($errors) > 0) {
-                /*
-                 * Uses a __toString method on the $errors variable which is a
-                 * ConstraintViolationList object. This gives us a nice string
-                 * for debugging.
-                 */
                 $errorsString = (string) $errors;
             
                 return $this->json([
                             'status'  => 'error',
                             'message' => $errorsString
-                        ], 422);
+                        ], 400);
             }
 
             $article = new Article();

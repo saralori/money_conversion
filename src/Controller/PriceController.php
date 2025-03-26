@@ -3,11 +3,13 @@
 namespace App\Controller;
 
 use App\Service\PriceService;
+use App\Validator\PriceValidator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Throwable;
 use OpenApi\Attributes as OA;
 
 final class PriceController extends AbstractController
@@ -26,7 +28,8 @@ final class PriceController extends AbstractController
         summary: 'The result in case of sum successfully made.',
         tags: [
             'Price Operations'
-        ])]
+        ]
+    )]
     #[OA\Response(
         response: 200,
         description: 'OK',
@@ -61,6 +64,24 @@ final class PriceController extends AbstractController
             )
         )
     ]
+    #[
+        OA\Response(
+            response: 500,
+            description: 'KO',
+            content: new OA\JsonContent(
+                examples: [
+                    new OA\Examples(
+                        example: 'server_error',
+                        summary: 'Some error occurred during the operations',
+                        description: 'Some error occurred during the operations',
+                        value: '{
+                        "error": "Some error occurred during the operations"
+                    }'
+                    )
+                ]
+            )
+        )
+    ]
     #[OA\Parameter(
         name: 'first_price',
         in: 'query',
@@ -77,30 +98,42 @@ final class PriceController extends AbstractController
         a price in the old British money system (pound, shilling, pence)', example: '3p 4s 10d')
 
     )]
-    public function sum(Request $request): Response
+    public function sum(Request $request, PriceValidator $validator): JsonResponse
     {
-        $firstPrice = $request->getPayload()->get('first_price', null);
-        $secondPrice = $request->getPayload()->get('second_price', null);
+        try {
+            $firstPrice = $request->get('first_price', null);
+            $secondPrice = $request->get('second_price', null);
 
-        /** Validazione campi in ingresso  */
-        $priceService = new PriceService();
-        $firstPriceValidated = $priceService->validatePrice($firstPrice);
-        $secondPriceValidated = $priceService->validatePrice($secondPrice);
+            //$errors = $validator->validate($request->get('first_price'));
+            $errors = $validator->validate($request->get('first_price'));
+            $errors = array_merge($errors, $validator->validate($request->get('second_price')));
+            if (count($errors) > 0) {
+                $errorsString = $errors[0];
 
-        $json = new JsonResponse();
+                return $this->json([
+                    'status'  => 'error',
+                    'message' => $errorsString
+                ], 400);
+            }
 
-        if (sizeof($firstPriceValidated) != 3 || sizeof($secondPriceValidated) != 3) {
-            $json->setStatusCode(400, "Invalid request");
-            $json->setData(["error" => "The input has to be the format '18p 16s 1d'"]);
+            /** Validazione campi in ingresso  */
+            $priceService = new PriceService();
+            $firstPriceValidated = $priceService->formatPrice($firstPrice);
+            $secondPriceValidated = $priceService->formatPrice($secondPrice);
+            /******* */
+
+            $sum = $priceService->sumPrices($firstPriceValidated, $secondPriceValidated);
+
+            $json = new JsonResponse();
+            $json->setData(['result' => $sum]);
+            $json->setStatusCode(200, "Ok");
+            return $json;
+        } catch (Throwable $e) {
+            $json = new JsonResponse();
+            $json->setData(['error' => "Some error occurred during the operations"]);
+            $json->setStatusCode(500, "KO");
             return $json;
         }
-        /******* */
-
-        $sum = $priceService->sumPrices($firstPriceValidated, $secondPriceValidated);
-
-        $json->setData(['result' => $sum]);
-        $json->setStatusCode(200, "Ok");
-        return $json;
     }
 
     #[Route('/api/price/subtract', name: 'price_sub', methods: ['POST'])]
@@ -109,7 +142,8 @@ final class PriceController extends AbstractController
         summary: 'The result in case of subtraction successfully made.',
         tags: [
             'Price Operations'
-        ])]
+        ]
+    )]
     #[OA\Response(
         response: 200,
         description: 'OK',
@@ -144,6 +178,24 @@ final class PriceController extends AbstractController
             )
         )
     ]
+    #[
+        OA\Response(
+            response: 500,
+            description: 'KO',
+            content: new OA\JsonContent(
+                examples: [
+                    new OA\Examples(
+                        example: 'server_error',
+                        summary: 'Some error occurred during the operations',
+                        description: 'Some error occurred during the operations',
+                        value: '{
+                        "error": "Some error occurred during the operations"
+                    }'
+                    )
+                ]
+            )
+        )
+    ]
     #[OA\Parameter(
         name: 'first_price',
         in: 'query',
@@ -160,40 +212,47 @@ final class PriceController extends AbstractController
         a price in the old British money system (pound, shilling, pence)', example: '3p 4s 10d')
 
     )]
-    public function sub(Request $request): Response
+    public function sub(Request $request, PriceValidator $validator): JsonResponse
     {
-        $firstPrice = $request->getPayload()->get('first_price', null);
-        $secondPrice = $request->getPayload()->get('second_price', null);
+        try {
+            $firstPrice = $request->getPayload()->get('first_price', null);
+            $secondPrice = $request->getPayload()->get('second_price', null);
 
-        /** Validazione campi in ingresso  */
-        $priceService = new PriceService();
-        $firstPriceValidated = $priceService->validatePrice($firstPrice);
-        $secondPriceValidated = $priceService->validatePrice($secondPrice);
+            $errors = $validator->validate($request->get('first_price'));
+            $errors = array_merge($errors, $validator->validate($request->get('second_price')));
+            if (count($errors) > 0) {
+                $errorsString = $errors[0];
 
-        $json = new JsonResponse();
-        if (sizeof($firstPriceValidated) != 3 || sizeof($secondPriceValidated) != 3) {
-            $json->setData(["error" => "The input has to be the format '18p 16s 1d'"]);
-            $json->setStatusCode(400, "Invalid request");
+                return $this->json([
+                    'status'  => 'error',
+                    'message' => $errorsString
+                ], 400);
+            }
+
+            /** Validazione campi in ingresso  */
+            $priceService = new PriceService();
+            $firstPriceValidated = $priceService->formatPrice($firstPrice);
+            $secondPriceValidated = $priceService->formatPrice($secondPrice);
+            /******* */
+
+            $sub = $priceService->subPrices($firstPriceValidated, $secondPriceValidated);
+
+            // Controllo il caso in cui il risultato in cui è minore di 0,
+            // in quel caso la richiesta non è valida
+            $json = new JsonResponse();
+            if ($sub == '') {
+                $json->setStatusCode(400, "Invalid request");
+            }
+
+            $json->setData(['result' => $sub]);
+            $json->setStatusCode(200, "Ok");
+            return $json;
+        } catch (Throwable $e) {
+            $json = new JsonResponse();
+            $json->setData(['error' => "Some error occurred during the operations"]);
+            $json->setStatusCode(500, "KO");
+            return $json;
         }
-        /******* */
-
-        $sub = $priceService->subPrices($firstPriceValidated, $secondPriceValidated);
-
-        // Controllo il caso in cui il risultato in cui è minore di 0,
-        // in quel caso la richiesta non è valida
-        if ($sub == '') {
-            $json->setStatusCode(400, "Invalid request");
-        }
-
-        // $firstPriceArray = json_decode($firstPrice, associative: true);
-
-        // $resultPrice = new Price();
-        // $resultPrice->setPence($firstPricePence);
-        // $resultPrice->setShilling($firstPriceShilling);
-        // $resultPrice->setPound($firstPricePounds);
-        $json->setData(['result' => $sub]);
-        $json->setStatusCode(200, "Ok");
-        return $json;
     }
 
     #[Route('/api/price/multiplicate', name: 'price_mul', methods: ['POST'])]
@@ -202,7 +261,8 @@ final class PriceController extends AbstractController
         summary: 'The result in case of multiplication successfully made.',
         tags: [
             'Price Operations'
-        ])]
+        ]
+    )]
     #[OA\Response(
         response: 200,
         description: 'OK',
@@ -237,6 +297,24 @@ final class PriceController extends AbstractController
             )
         )
     ]
+    #[
+        OA\Response(
+            response: 500,
+            description: 'KO',
+            content: new OA\JsonContent(
+                examples: [
+                    new OA\Examples(
+                        example: 'server_error',
+                        summary: 'Some error occurred during the operations',
+                        description: 'Some error occurred during the operations',
+                        value: '{
+                        "error": "Some error occurred during the operations"
+                    }'
+                    )
+                ]
+            )
+        )
+    ]
     #[OA\Parameter(
         name: 'first_price',
         in: 'query',
@@ -252,26 +330,46 @@ final class PriceController extends AbstractController
         schema: new OA\Schema(type: 'integer', description: 'This field represent the multiplication factor. It must be >= 0', example: '2')
 
     )]
-    public function multiplicate(Request $request): Response
+    public function multiplicate(Request $request, PriceValidator $validator): Response
     {
-        $firstPrice = $request->getPayload()->get('first_price', null);
-        $multiplicator = $request->getPayload()->get('multiplicator', null);
+        try {
+            $firstPrice = $request->getPayload()->get('first_price', null);
+            $multiplicator = $request->getPayload()->get('multiplicator', null);
 
-        /** Validazione campi in ingresso  */
-        $priceService = new PriceService();
-        $firstPriceValidated = $priceService->validatePrice($firstPrice);
+            $errors = $validator->validate($request->get('first_price'));
+            if (count($errors) > 0) {
+                $errorsString = $errors[0];
 
-        $json = new JsonResponse();
-        if (gettype($multiplicator) != 'integer' || $multiplicator < 0 || sizeof($firstPriceValidated) != 3) {
-            $json->setStatusCode(400, "Invalid request");
+                return $this->json([
+                    'status'  => 'error',
+                    'message' => $errorsString
+                ], 400);
+            }
+            $json = new JsonResponse();
+            if (gettype($multiplicator) != 'integer' || $multiplicator < 0) {
+                return $this->json([
+                    'status'  => 'error',
+                    'message' => "Invalid request"
+                ], 400);
+            }
+
+            /** Validazione campi in ingresso  */
+            $priceService = new PriceService();
+            $firstPriceValidated = $priceService->formatPrice($firstPrice);
+
+            /******* */
+
+            $mul = $priceService->multiplicatePrices($firstPriceValidated, $multiplicator);
+
+            $json->setData(['result' => $mul]);
+            $json->setStatusCode(200, "Ok");
+            return $json;
+        } catch (Throwable $e) {
+            $json = new JsonResponse();
+            $json->setData(['error' => "Some error occurred during the operations"]);
+            $json->setStatusCode(500, "KO");
+            return $json;
         }
-        /******* */
-
-        $mul = $priceService->multiplicatePrices($firstPriceValidated, $multiplicator);
-
-        $json->setData(['result' => $mul]);
-        $json->setStatusCode(200, "Ok");
-        return $json;
     }
 
     #[Route('/api/price/divide', name: 'price_div', methods: ['POST'])]
@@ -280,7 +378,8 @@ final class PriceController extends AbstractController
         summary: 'The result in case of division successfully made.',
         tags: [
             'Price Operations'
-        ])]
+        ]
+    )]
     #[OA\Response(
         response: 200,
         description: 'OK',
@@ -315,6 +414,24 @@ final class PriceController extends AbstractController
             )
         )
     ]
+    #[
+        OA\Response(
+            response: 500,
+            description: 'KO',
+            content: new OA\JsonContent(
+                examples: [
+                    new OA\Examples(
+                        example: 'server_error',
+                        summary: 'Some error occurred during the operations',
+                        description: 'Some error occurred during the operations',
+                        value: '{
+                        "error": "Some error occurred during the operations"
+                    }'
+                    )
+                ]
+            )
+        )
+    ]
     #[OA\Parameter(
         name: 'first_price',
         in: 'query',
@@ -330,24 +447,44 @@ final class PriceController extends AbstractController
         schema: new OA\Schema(type: 'integer', description: 'This field represent the division factor. It must be > 0', example: '15')
 
     )]
-    public function divide(Request $request): Response
+    public function divide(Request $request, PriceValidator $validator): Response
     {
-        $firstPrice = $request->getPayload()->get('first_price', null);
-        $factor = $request->getPayload()->get('factor', 1);
+        try {
+            $firstPrice = $request->getPayload()->get('first_price', null);
+            $factor = $request->getPayload()->get('factor', 1);
 
-        /** Validazione campi in ingresso  */
-        $priceService = new PriceService();
-        $firstPriceValidated = $priceService->validatePrice($firstPrice);
-        $json = new JsonResponse();
-        if (gettype($factor) != 'integer' || $factor <= 0 || sizeof($firstPriceValidated) != 3) {
-            $json->setStatusCode(400, "Invalid request");
+            $errors = $validator->validate($request->get('first_price'));
+            if (count($errors) > 0) {
+                $errorsString = $errors[0];
+
+                return $this->json([
+                    'status'  => 'error',
+                    'message' => $errorsString
+                ], 400);
+            }
+
+            /** Validazione campi in ingresso  */
+            $priceService = new PriceService();
+            $firstPriceValidated = $priceService->formatPrice($firstPrice);
+            $json = new JsonResponse();
+            if (gettype($factor) != 'integer' || $factor <= 0) {
+                return $this->json([
+                    'status'  => 'error',
+                    'message' => "Invalid request"
+                ], 400);
+            }
+            /******* */
+
+            $division = $priceService->dividePrices($firstPriceValidated, $factor);
+
+            $json->setData(['result' => $division]);
+            $json->setStatusCode(200, "Ok");
+            return $json;
+        } catch (Throwable $e) {
+            $json = new JsonResponse();
+            $json->setData(['error' => "Some error occurred during the operations"]);
+            $json->setStatusCode(500, "KO");
+            return $json;
         }
-        /******* */
-
-        $division = $priceService->dividePrices($firstPriceValidated, $factor);
-
-        $json->setData(['result' => $division]);
-        $json->setStatusCode(200, "Ok");
-        return $json;
     }
 }

@@ -4,22 +4,13 @@ namespace App\Service;
 
 class PriceService
 {
-    public function validatePrice(string $price): array
+    public function formatPrice(string $price): array
     {
         $parameters = explode(" ", $price);
-
-        if (sizeof($parameters) != 3) {
-            return ["Error on parameters format"];
-        }
 
         $pounds = $this->formatSinglePriceVoices($parameters[0], 'pound');
         $shillings = $this->formatSinglePriceVoices($parameters[1], 'shilling');
         $pences = $this->formatSinglePriceVoices($parameters[2], 'pence');
-
-        if ($pounds == '' || $shillings == '' || $pences == '') {
-            return ['Error on parameters format'];
-        }
-        //TODO: gestire validazione campi interi
 
         return [$pounds, $shillings, $pences];
     }
